@@ -1,4 +1,4 @@
-## __LIB_NAME__
+## ts-lib
 
 This is just a template for creating a typescript library.
 
