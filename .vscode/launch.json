@@ -33,7 +33,7 @@
             "name": "Main Watched TSC",
             "type": "node",
             "request": "launch",
-            "program": "${workspaceRoot}/validatorz.test.ts",
+            "program": "${workspaceRoot}/lib.test.ts",
             "env": {
                 "FORCE_COLOR": "1"
             },
@@ -64,7 +64,7 @@
             "type": "node",
             "request": "launch",
             "args": [
-                "${workspaceRoot}/validatorz.test.ts"
+                "${workspaceRoot}/lib.test.ts"
             ],
             "runtimeArgs": [
                 "-r",

@@ -13,6 +13,7 @@ git remote add origin git@github.com:$GITHUB_USERNAME/$PROJ_NAME
 rm init.sh
 rm README.md
 echo "# $PROJ_NAME" > README.md
+yarn
 
 echo
 echo "project initialized successfully"
