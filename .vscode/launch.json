@@ -1,0 +1,78 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Node Current File",
+            "program": "${workspaceFolder}/${relativeFile}"
+        },
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Run Current TS Watched File",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceRoot}/${relativeFile}",
+            "env": {
+                "FORCE_COLOR": "1"
+            },
+            "skipFiles": [
+                "<node_internals>/**/*.js",
+            ],
+            "outFiles": [
+                "${workspaceRoot}/dist/**/*.js"
+            ]
+        },
+        {
+            "name": "Main Watched TSC",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceRoot}/validatorz.test.ts",
+            "env": {
+                "FORCE_COLOR": "1"
+            },
+            "skipFiles": [
+                "<node_internals>/**/*.js",
+            ],
+            "outFiles": [
+                "${workspaceRoot}/dist/**/*.js"
+            ]
+        },
+        {
+            "name": "Current TS File",
+            "type": "node",
+            "request": "launch",
+            "args": [
+                "${relativeFile}"
+            ],
+            "runtimeArgs": [
+                "-r",
+                "ts-node/register"
+            ],
+            "cwd": "${workspaceRoot}",
+            "protocol": "inspector",
+            "internalConsoleOptions": "openOnSessionStart"
+        },
+        {
+            "name": "Main TS File",
+            "type": "node",
+            "request": "launch",
+            "args": [
+                "${workspaceRoot}/validatorz.test.ts"
+            ],
+            "runtimeArgs": [
+                "-r",
+                "ts-node/register"
+            ],
+            "cwd": "${workspaceRoot}",
+            "protocol": "inspector",
+            "internalConsoleOptions": "openOnSessionStart"
+        },
+    ]
+}

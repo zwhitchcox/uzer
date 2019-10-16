@@ -1,0 +1,50 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Compile Watch",
+      "type": "shell",
+      "command": "tsc",
+      "args": [
+        "-w",
+        "tsconfigdev.json"
+      ],
+      "presentation": {
+        "group": "test",
+        "reveal": "never",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Build Prod",
+      "type": "shell",
+      "command": "tsc",
+      "args": [
+        "--build",
+        "-t",
+        "es6"
+      ],
+      "presentation": {
+        "reveal": "never",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "NPM Publish",
+      "type": "shell",
+      "command": "npm",
+      "args": [
+        "publish"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+  ]
+}
