@@ -1,25 +1,33 @@
 {
   "devDependencies": {
     "expect": "^24.9.0",
-    "tezt": "^1.1.0"
+    "sqlite": "^3.0.3",
+    "tezt": "^1.1.0",
+    "ts-node-dev": "^1.0.0-pre.43",
+    "typescript": "^3.6.4"
   },
-  "name": "LIB_NAME",
+  "name": "uzer",
   "description": "",
   "version": "0.0.1",
   "main": "dist/lib.js",
-  "dependencies": {},
+  "dependencies": {
+    "bcrypt": "^3.0.6",
+    "bluebird": "^3.7.1",
+    "sql-template-strings": "^2.2.2",
+    "validatorz": "^2.3.3"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/GITHUB_USERNAME/LIB_NAME.git"
+    "url": "git+https://github.com/zwhitchcox/uzer.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/GITHUB_USERNAME/LIB_NAME/issues"
+    "url": "https://github.com/zwhitchcox/uzer/issues"
   },
-  "homepage": "https://github.com/GITHUB_USERNAME/LIB_NAME#readme"
+  "homepage": "https://github.com/zwhitchcox/uzer#readme"
 }
