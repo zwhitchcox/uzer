@@ -38,7 +38,7 @@ const uzer = new SqliteUzer({
 ```ts
 import { PostgresUzer } from 'uzer'
 
-const uzer = Uzer({
+const uzer = PostgresUzer({
   tableName: "mytable",
   db: {
     host: 'localhost',
