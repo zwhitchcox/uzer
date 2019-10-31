@@ -3,8 +3,7 @@
 `uzer` provides convenience functions for creating and authenticating users.
 
 * rapidly add user authentication to your app
-* meant for development purposes
-* uses `sqlite` file
+* uses `sqlite` or `postgres`
 * only stores user `email` and `password`
 * passwords hashed using `bcrypt`
 
@@ -18,8 +17,10 @@
 
 Initialize the database providing the options:
 
+##### Sqlite
 ```ts
-const uzer = new Uzer({
+import { SqliteUzer } from 'uzer'
+const uzer = new SqliteUzer({
   tableName: "users",
   validatePassword: password => {
     if (password.length < 10) {
@@ -29,7 +30,23 @@ const uzer = new Uzer({
       throw new Error("Password must contain symbols (!@#$%^&*())")
     }
   },
-  dbFile: "uzer.db",
+  db: "uzer.db",
+})
+```
+
+##### Postgres
+```ts
+import { PostgresUzer } from 'uzer'
+
+const uzer = Uzer({
+  tableName: "mytable",
+  db: {
+    host: 'localhost',
+    user: 'postgres',
+    database: 'mydb',
+    password: 'password',
+    port: 5432,
+  }
 })
 ```
 
@@ -39,7 +56,9 @@ const uzer = new Uzer({
   type with the same email address.
 * `validatePassword`: function to use while creating/updating users' passwords
   Defaults to the `passwordValidator` function from [`validatorz`](https://npmjs.com/validatorz)
-* `dbFile`: file to store the sqlite database. defaults to `":memory:"`
+* `db`:
+  * `postgres`: info on the database for connection
+  * `sqlite`: file to store the sqlite database. defaults to `":memory:"`
 
 `Uzer` returns an object with several functions for manipulating/reading the user
 authentication data. These are documented in the API section.

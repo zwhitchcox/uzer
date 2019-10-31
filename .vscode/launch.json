@@ -33,7 +33,7 @@
             "name": "Main Watched TSC",
             "type": "node",
             "request": "launch",
-            "program": "${workspaceRoot}/lib.test.ts",
+            "program": "${workspaceRoot}/lib.pg.test.ts",
             "env": {
                 "FORCE_COLOR": "1"
             },

@@ -1,5 +1,5 @@
 import { test, before, /*describe, after, afterEach, beforeEach*/ } from 'tezt'
-import { Uzer } from './lib';
+import { Uzer } from './lib.sqlite';
 import expect from "expect"
 import bcrypt from "bcrypt"
 
