@@ -1,6 +1,8 @@
 import bcrypt from 'bcrypt'
+import uuid from 'uuid/v4'
 import {passwordValidator, emailValidator} from 'validatorz'
 import { Pool } from 'pg'
+import { hashPassword } from './util';
 
 const checkEmail = email => {
   const errors = emailValidator(email)
@@ -8,6 +10,7 @@ const checkEmail = email => {
     throw new Error("Invalid email.")
   }
 }
+
 
 export const Uzer = opts => {
   let pool;
@@ -32,9 +35,19 @@ export const Uzer = opts => {
     password varchar(60) NOT NULL
   );
   `
+  const MIGRATION_1 = `
+  DO $$
+    BEGIN
+      ALTER TABLE ${tableName} ADD COLUMN password_reset_token varchar(36);
+      ALTER TABLE ${tableName} ADD COLUMN password_reset_token_expiration bigint;
+      EXCEPTION WHEN duplicate_column THEN NULL;
+    END;
+  $$
+  `
   const init = async () => {
     pool = await new Pool(opts.db)
     await pool.query(CREATE_USER_TABLE)
+    await pool.query(MIGRATION_1)
     verboseLog('Initialized the user table.')
   }
 
@@ -47,7 +60,7 @@ export const Uzer = opts => {
   const createUser = async user => {
     checkPassword(user.password)
     checkEmail(user.email)
-    const hashedPass = await bcrypt.hash(user.password, 10)
+    const hashedPass = await hashPassword(user.password)
     return await pool.query(INSERT_USER_QUERY, [user.email, hashedPass])
   }
 
@@ -82,12 +95,37 @@ export const Uzer = opts => {
     if (errors.length) {
       throw new Error(errors.reduce((acc, cur) => acc + cur.toString() + "\n", ""))
     }
-    const hashedPass = await bcrypt.hash(newPassword, 10)
+    const hashedPass = await hashPassword(newPassword)
     return pool.query(UPDATE_USER_PASSWORD_MUTATION, [hashedPass, email])
   }
 
   const DELETE_USER_BY_EMAIL_MUTATION = `DELETE FROM ${tableName} WHERE email = $1;`
   const deleteUser = email => pool.query(DELETE_USER_BY_EMAIL_MUTATION, [email])
+
+  const CREATE_PASSWORD_RESET_TOKEN_MUTATION =
+    `UPDATE ${tableName} SET password_reset_token = $1, password_reset_token_expiration = $2 WHERE email = $3;`
+  const createPasswordResetToken = async ({email, expiration}) => {
+    const token = uuid()
+    await pool.query(CREATE_PASSWORD_RESET_TOKEN_MUTATION, [token, expiration, email])
+    return token
+  }
+
+  const PASSWORD_RESET_TOKEN_QUERY = `SELECT password_reset_token from ${tableName} WHERE email = $1;`
+  const getPasswordResetToken = async email => {
+    const {rows} = await pool.query(PASSWORD_RESET_TOKEN_QUERY, [email])
+    return rows[0].password_reset_token
+  }
+
+  const RESET_PASSWORD_BY_TOKEN_MUTATION =
+    `UPDATE ${tableName} SET password_reset_token = NULL, password_reset_token_expiration = NULL, password = $1 WHERE email = $2;`
+  const resetPasswordByToken = async ({email, password, token}) => {
+    const resetToken = await getPasswordResetToken(email)
+    if (token !== resetToken) {
+      throw new Error("That token has expired or does not exist.")
+    }
+    const hashedPassword = await hashPassword(password)
+    await pool.query(RESET_PASSWORD_BY_TOKEN_MUTATION, [hashedPassword, email])
+  }
 
   return {
     init,
@@ -99,6 +137,8 @@ export const Uzer = opts => {
     getAllUsers,
     updateUserEmail,
     updateUserPassword,
+    resetPasswordByToken,
+    createPasswordResetToken,
     deleteUser,
   }
 }

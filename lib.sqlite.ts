@@ -1,6 +1,8 @@
 import bcrypt from 'bcrypt'
 import {passwordValidator, emailValidator} from 'validatorz'
+import uuid from 'uuid/v4'
 import sqlite from 'sqlite'
+import { hashPassword } from './util';
 
 
 const checkEmail = email => {
@@ -14,6 +16,7 @@ export const Uzer = opts => {
   let db;
   const tableName = opts.tableName || "users"
   const validatePassword = opts.validatePassword || passwordValidator
+  const type = opts.type || "sqlite"
   const dbFile = opts.db || ":memory:"
   const checkPassword = password => {
     const errors = validatePassword(password)
@@ -29,7 +32,9 @@ export const Uzer = opts => {
   CREATE TABLE IF NOT EXISTS ${tableName} (
     id INTEGER PRIMARY KEY,
     email TEXT NOT NULL UNIQUE,
-    password TEXT NOT NULL
+    password TEXT NOT NULL,
+    password_reset_token TEXT,
+    password_reset_token_expiration INTEGER
   );
   `
   const init = async () => {
@@ -47,7 +52,7 @@ export const Uzer = opts => {
   const createUser = async user => {
     checkPassword(user.password)
     checkEmail(user.email)
-    const hashedPass = await bcrypt.hash(user.password, 10)
+    const hashedPass = await hashPassword(user.password)
     return await db.get(INSERT_USER_QUERY, [user.email, hashedPass])
   }
 
@@ -73,12 +78,37 @@ export const Uzer = opts => {
     if (errors.length) {
       throw new Error(errors.reduce((acc, cur) => acc + cur.toString() + "\n", ""))
     }
-    const hashedPass = await bcrypt.hash(newPassword, 10)
+    const hashedPass = await hashPassword(newPassword)
     return db.run(UPDATE_USER_PASSWORD_MUTATION, [hashedPass, email])
   }
 
   const DELETE_USER_BY_EMAIL_MUTATION = `DELETE FROM ${tableName} WHERE email = ?;`
   const deleteUser = email => db.run(DELETE_USER_BY_EMAIL_MUTATION, [email])
+
+  const CREATE_PASSWORD_RESET_TOKEN_MUTATION =
+    `UPDATE ${tableName} SET password_reset_token = ?, password_reset_token_expiration = ? WHERE email = ?;`
+  const createPasswordResetToken = async ({email, expiration}) => {
+    const token = uuid()
+    await db.run(CREATE_PASSWORD_RESET_TOKEN_MUTATION, [token, expiration, email])
+    return token
+  }
+
+  const PASSWORD_RESET_TOKEN_QUERY = `SELECT password_reset_token from ${tableName} WHERE email = ?;`
+  const getPasswordResetToken = async email => {
+    const result = await db.all(PASSWORD_RESET_TOKEN_QUERY, email)
+    return result[0].password_reset_token
+  }
+
+  const RESET_PASSWORD_BY_TOKEN_MUTATION =
+    `UPDATE ${tableName} SET password_reset_token = NULL, password_reset_token_expiration = NULL, password = ? WHERE email = ?;`
+  const resetPasswordByToken = async ({email, password, token}) => {
+    const resetToken = await getPasswordResetToken(email)
+    if (token !== resetToken) {
+      throw new Error("That token has expired or does not exist.")
+    }
+    const hashedPassword = await hashPassword(password)
+    await db.run(RESET_PASSWORD_BY_TOKEN_MUTATION, [hashedPassword, email])
+  }
 
   return {
     init,
@@ -90,5 +120,7 @@ export const Uzer = opts => {
     updateUserEmail,
     updateUserPassword,
     deleteUser,
+    createPasswordResetToken,
+    resetPasswordByToken,
   }
 }

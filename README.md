@@ -93,4 +93,10 @@ All functions return a promise. Promise is rejected if there is an error.
   * `({email, password}) => undefined`
 * `deleteUser`:
   * deletes user
-  * `(email) => undefined`
+  * `email => undefined`
+* `createPasswordResetToken`
+  * create a token which can be used to set a new password for password recovery
+  * `email => passwordToken`
+* `resetPasswordByToken`
+  * use password from `createPasswordResetToken` to set the new password
+  * `({email, password, token}) => undefined`
