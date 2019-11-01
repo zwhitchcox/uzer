@@ -7,13 +7,14 @@ const sampleUser = {
   email: "zwhitchcox@gmail.com",
   password: "MyPassword@01"
 }
+const tableName = "mytable"
 
 const sqliteUzer = SqliteUzer({
-  tableName: "mytable"
+  tableName,
 })
 
 const postgresUzer = PostgresUzer({
-  tableName: "mytable",
+  tableName,
   db: {
     host: 'localhost',
     user: 'postgres',
@@ -29,16 +30,25 @@ before(async () => {
 })
 
 after(async () => {
+  await postgresUzer.getPool().query(`DELETE FROM ${tableName};`)
   await sqliteUzer.close()
   await postgresUzer.close()
 })
 
 const runBoth = fn => {
-  fn(sqliteUzer)
-  fn(postgresUzer)
+  fn({
+    uzer: sqliteUzer,
+    type: "sqlite",
+  })
+  fn({
+    uzer: postgresUzer,
+    type: "postgres",
+  })
 }
 
-runBoth(uzer => {
+runBoth(({uzer, type}) => {
+  const falseVal = type === "sqlite" ? 0 : false
+  const trueVal = type === "sqlite" ? 1 : true
   test("create user", async () => {
     expect(() => uzer.createUser({
       email: "asdf@asdf.com"
@@ -94,9 +104,32 @@ runBoth(uzer => {
     expect(await bcrypt.compare(resetPassword, user.password)).toBe(true)
   })
 
-  test("delete user", async () => {
-    expect(await uzer.getAllUsers()).toMatchObject([{email: alteredEmail}])
-    await uzer.deleteUser(alteredEmail)
-    expect(await uzer.getAllUsers()).toEqual([])
+  const newUser = {
+    email: alteredEmail,
+    password: resetPassword
+  }
+  test("deactivate user", async () => {
+    expect(await uzer.getAllUsers()).toMatchObject([{email: alteredEmail, active: trueVal}])
+    await uzer.deactivateAccount(newUser)
+    expect(await uzer.getAllUsers()).toMatchObject([{email: alteredEmail, active: falseVal}])
+  })
+
+  test("reactivate user", async () => {
+    expect(await uzer.getAllUsers()).toMatchObject([{email: alteredEmail, active: falseVal}])
+    await uzer.reactivateAccount(newUser)
+    expect(await uzer.getAllUsers()).toMatchObject([{email: alteredEmail, active: trueVal}])
+  })
+
+  test("verify email", async () => {
+    expect(await uzer.getAllUsers()).toMatchObject([{email: alteredEmail, email_verified: falseVal}])
+    const verificationToken = await uzer.createEmailVerificationToken({
+      email: alteredEmail,
+      expiration: Date.now() + FIFTEEN_MINUTES,
+    })
+    await uzer.verifyEmailByToken({
+      token: verificationToken,
+      email: alteredEmail,
+    })
+    expect(await uzer.getAllUsers()).toMatchObject([{email: alteredEmail, email_verified: trueVal}])
   })
 })

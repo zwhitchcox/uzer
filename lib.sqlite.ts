@@ -34,7 +34,11 @@ export const Uzer = opts => {
     email TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL,
     password_reset_token TEXT,
-    password_reset_token_expiration INTEGER
+    password_reset_token_expiration INTEGER,
+    email_verified BOOLEAN NOT NULL CHECK (email_verified IN (0, 1)),
+    email_verification_token TEXT,
+    email_verification_token_expiration INTEGER,
+    active BOOLEAN NOT NULL CHECK (active IN (0, 1))
   );
   `
   const init = async () => {
@@ -48,7 +52,7 @@ export const Uzer = opts => {
     verboseLog('Closed the database connection')
   }
 
-  const INSERT_USER_QUERY = `INSERT INTO ${tableName} (email, password) VALUES (?, ?);`
+  const INSERT_USER_QUERY = `INSERT INTO ${tableName} (email, password, active, email_verified) VALUES (?, ?, 1, 0);`
   const createUser = async user => {
     checkPassword(user.password)
     checkEmail(user.email)
@@ -95,8 +99,8 @@ export const Uzer = opts => {
 
   const PASSWORD_RESET_TOKEN_QUERY = `SELECT password_reset_token from ${tableName} WHERE email = ?;`
   const getPasswordResetToken = async email => {
-    const result = await db.all(PASSWORD_RESET_TOKEN_QUERY, email)
-    return result[0].password_reset_token
+    const result = await db.get(PASSWORD_RESET_TOKEN_QUERY, email)
+    return result.password_reset_token
   }
 
   const RESET_PASSWORD_BY_TOKEN_MUTATION =
@@ -110,6 +114,53 @@ export const Uzer = opts => {
     await db.run(RESET_PASSWORD_BY_TOKEN_MUTATION, [hashedPassword, email])
   }
 
+  const DEACTIVATE_ACCOUNT_MUTATION = `UPDATE ${tableName} SET active = 0 WHERE email = ?;`
+  const deactivateAccount = async ({email, password}) => {
+    await authenticateUser({email, password})
+    await db.run(DEACTIVATE_ACCOUNT_MUTATION, [email])
+  }
+
+  const REACTIVATE_ACCOUNT_MUTATION = `UPDATE ${tableName} SET active = 1 WHERE email = ?;`
+  const reactivateAccount = async ({email, password}) => {
+    await authenticateUser({email, password})
+    await db.run(REACTIVATE_ACCOUNT_MUTATION, [email])
+  }
+
+  const CREATE_EMAIL_VERIFICATION_TOKEN_MUTATION =
+    `
+    UPDATE ${tableName}
+    SET email_verification_token = ?,
+        email_verification_token_expiration = ?
+    WHERE email = ?;
+    `
+  const createEmailVerificationToken = async ({email, expiration}) => {
+    const token = uuid()
+    await db.run(CREATE_EMAIL_VERIFICATION_TOKEN_MUTATION, [token, expiration, email])
+    return token
+  }
+
+  const EMAIL_VERIFICATION_TOKEN_QUERY = `SELECT email_verification_token from ${tableName} WHERE email = ?;`
+  const getEmailVerificationToken = async email => {
+    const result = await db.get(EMAIL_VERIFICATION_TOKEN_QUERY, email)
+    return result.email_verification_token
+  }
+
+  const VERIFY_EMAIL_BY_TOKEN_MUTATION =
+    `
+    UPDATE ${tableName}
+    SET email_verification_token = NULL,
+        email_verification_token_expiration = NULL,
+        email_verified = 1
+    WHERE email = ?;
+    `
+  const verifyEmailByToken = async ({email, token}) => {
+    const resetToken = await getEmailVerificationToken(email)
+    if (token !== resetToken) {
+      throw new Error("That token has expired or does not exist.")
+    }
+    await db.run(VERIFY_EMAIL_BY_TOKEN_MUTATION, [email])
+  }
+
   return {
     init,
     close,
@@ -119,8 +170,12 @@ export const Uzer = opts => {
     getAllUsers,
     updateUserEmail,
     updateUserPassword,
-    deleteUser,
+    deactivateAccount,
+    reactivateAccount,
     createPasswordResetToken,
     resetPasswordByToken,
+    verifyEmailByToken,
+    createEmailVerificationToken,
+    deleteUser,
   }
 }

@@ -31,15 +31,26 @@ export const Uzer = opts => {
   `
   CREATE TABLE IF NOT EXISTS ${tableName} (
     id SERIAL PRIMARY KEY,
-    email varchar(320) NOT NULL UNIQUE,
-    password varchar(60) NOT NULL
+    email VARCHAR(320) NOT NULL UNIQUE,
+    password VARCHAR(60) NOT NULL
   );
   `
   const MIGRATION_1 = `
   DO $$
     BEGIN
-      ALTER TABLE ${tableName} ADD COLUMN password_reset_token varchar(36);
-      ALTER TABLE ${tableName} ADD COLUMN password_reset_token_expiration bigint;
+      ALTER TABLE ${tableName} ADD COLUMN password_reset_token VARCHAR(36);
+      ALTER TABLE ${tableName} ADD COLUMN password_reset_token_expiration BIGINT;
+      EXCEPTION WHEN duplicate_column THEN NULL;
+    END;
+  $$
+  `
+  const MIGRATION_2 = `
+  DO $$
+    BEGIN
+      ALTER TABLE ${tableName} ADD COLUMN active BOOLEAN NOT NULL DEFAULT TRUE;
+      ALTER TABLE ${tableName} ADD COLUMN email_verified BOOLEAN NOT NULL DEFAULT FALSE;
+      ALTER TABLE ${tableName} ADD COLUMN email_verification_token VARCHAR(36);
+      ALTER TABLE ${tableName} ADD COLUMN email_verification_token_expiration BIGINT;
       EXCEPTION WHEN duplicate_column THEN NULL;
     END;
   $$
@@ -48,6 +59,7 @@ export const Uzer = opts => {
     pool = await new Pool(opts.db)
     await pool.query(CREATE_USER_TABLE)
     await pool.query(MIGRATION_1)
+    await pool.query(MIGRATION_2)
     verboseLog('Initialized the user table.')
   }
 
@@ -127,6 +139,53 @@ export const Uzer = opts => {
     await pool.query(RESET_PASSWORD_BY_TOKEN_MUTATION, [hashedPassword, email])
   }
 
+  const DEACTIVATE_ACCOUNT_MUTATION = `UPDATE ${tableName} SET active = FALSE WHERE email = $1;`
+  const deactivateAccount = async ({email, password}) => {
+    await authenticateUser({email, password})
+    await pool.query(DEACTIVATE_ACCOUNT_MUTATION, [email])
+  }
+
+  const REACTIVATE_ACCOUNT_MUTATION = `UPDATE ${tableName} SET active = TRUE WHERE email = $1;`
+  const reactivateAccount = async ({email, password}) => {
+    await authenticateUser({email, password})
+    await pool.query(REACTIVATE_ACCOUNT_MUTATION, [email])
+  }
+
+  const CREATE_EMAIL_VERIFICATION_TOKEN_MUTATION =
+    `
+    UPDATE ${tableName}
+    SET email_verification_token = $1,
+        email_verification_token_expiration = $2
+    WHERE email = $3;
+    `
+  const createEmailVerificationToken = async ({email, expiration}) => {
+    const token = uuid()
+    await pool.query(CREATE_EMAIL_VERIFICATION_TOKEN_MUTATION, [token, expiration, email])
+    return token
+  }
+
+  const EMAIL_VERIFICATION_TOKEN_QUERY = `SELECT email_verification_token FROM ${tableName} WHERE email = $1`
+  const getEmailVerificationToken = async email => {
+    const {rows} = await pool.query(EMAIL_VERIFICATION_TOKEN_QUERY, [email])
+    return rows[0].email_verification_token
+  }
+
+  const VERIFY_EMAIL_BY_TOKEN_MUTATION =
+    `
+    UPDATE ${tableName}
+    SET email_verification_token = NULL,
+        email_verification_token_expiration = NULL,
+        email_verified = TRUE
+    WHERE email = $1;
+    `
+  const verifyEmailByToken = async ({email, token}) => {
+    const resetToken = await getEmailVerificationToken(email)
+    if (token !== resetToken) {
+      throw new Error("That token has expired or does not exist.")
+    }
+    await pool.query(VERIFY_EMAIL_BY_TOKEN_MUTATION, [email])
+  }
+
   return {
     init,
     close,
@@ -137,8 +196,12 @@ export const Uzer = opts => {
     getAllUsers,
     updateUserEmail,
     updateUserPassword,
+    deleteUser,
     resetPasswordByToken,
     createPasswordResetToken,
-    deleteUser,
+    deactivateAccount,
+    reactivateAccount,
+    createEmailVerificationToken,
+    verifyEmailByToken,
   }
 }

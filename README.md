@@ -100,3 +100,15 @@ All functions return a promise. Promise is rejected if there is an error.
 * `resetPasswordByToken`
   * use password from `createPasswordResetToken` to set the new password
   * `({email, password, token}) => undefined`
+* `deactivateAccount`
+  * sets user's `active` field to `false`
+  * `({email, password}) => undefined`
+* `reactivateAccount`
+  * sets user's `active` field to `true`
+  * `({email, password}) => undefined`
+* `createEmailVerificationToken`
+  * creates a token that can be sent to a user's email for verification
+  * `email => token`
+* `verifyEmailByToken`
+  * uses token from `createEmailVerificationToken` to set user's `email_verified` status to `true`
+  * `({email, token}) => undefined`
