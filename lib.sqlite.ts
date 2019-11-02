@@ -16,8 +16,6 @@ export const Uzer = opts => {
   let db;
   const tableName = opts.tableName || "users"
   const validatePassword = opts.validatePassword || passwordValidator
-  const type = opts.type || "sqlite"
-  const dbFile = opts.db || ":memory:"
   const checkPassword = password => {
     const errors = validatePassword(password)
     if (errors.length) {
@@ -42,7 +40,7 @@ export const Uzer = opts => {
   );
   `
   const init = async () => {
-    db = await sqlite.open(dbFile)
+    db = await opts.sqlite
     await db.run(CREATE_USER_TABLE)
     verboseLog('Initialized the user table.')
   }

@@ -20,6 +20,9 @@ Initialize the database providing the options:
 ##### Sqlite
 ```ts
 import { SqliteUzer } from 'uzer'
+import sqlite from 'sqlite'
+
+;(async () => {
 const uzer = new SqliteUzer({
   tableName: "users",
   validatePassword: password => {
@@ -30,24 +33,42 @@ const uzer = new SqliteUzer({
       throw new Error("Password must contain symbols (!@#$%^&*())")
     }
   },
-  db: "uzer.db",
+  sqlite: sqlite.open(":memory:"),
 })
+
+await uzer.init()
+
+await uzer.createUser({
+  email: "myemail@gmail.com",
+  password: "Password123",
+})
+})()
 ```
 
 ##### Postgres
 ```ts
 import { PostgresUzer } from 'uzer'
+import { Pool } from 'pg'
 
+;(async () => {
 const uzer = Uzer({
   tableName: "mytable",
-  db: {
+  pool: new Pool({
     host: 'localhost',
     user: 'postgres',
     database: 'mydb',
     password: 'password',
     port: 5432,
-  }
+  })
 })
+
+await uzer.init()
+
+await uzer.createUser({
+  email: "myemail@gmail.com",
+  password: "Password123",
+})
+})()
 ```
 
 * `tableName`: the name you want for your users table. Defaults to `"users"`
@@ -56,9 +77,9 @@ const uzer = Uzer({
   type with the same email address.
 * `validatePassword`: function to use while creating/updating users' passwords
   Defaults to the `passwordValidator` function from [`validatorz`](https://npmjs.com/validatorz)
-* `db`:
-  * `postgres`: info on the database for connection
-  * `sqlite`: file to store the sqlite database. defaults to `":memory:"`
+* `postgres`
+  * `pool`: pool from the `[pg package](https://npmjs.com/pg)`
+  * `sqlite`: sqlite db from the `[sqlite package](https://npmjs.com/sqlite)`
 
 `Uzer` returns an object with several functions for manipulating/reading the user
 authentication data. These are documented in the API section.

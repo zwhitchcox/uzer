@@ -1,4 +1,6 @@
 import { test, before, after, /*describe, afterEach, beforeEach*/ } from 'tezt'
+import { Pool } from 'pg'
+import sqlite from 'sqlite'
 import { SqliteUzer, PostgresUzer } from './lib';
 import expect from "expect"
 import bcrypt from "bcrypt"
@@ -11,26 +13,29 @@ const tableName = "mytable"
 
 const sqliteUzer = SqliteUzer({
   tableName,
+  sqlite: sqlite.open(":memory:"),
 })
 
+const pool = new Pool({
+  host: 'localhost',
+  user: 'postgres',
+  database: 'uzertest',
+  password: 'password',
+  port: 5432,
+})
 const postgresUzer = PostgresUzer({
   tableName,
-  db: {
-    host: 'localhost',
-    user: 'postgres',
-    database: 'uzertest',
-    password: 'password',
-    port: 5432,
-  }
+  pool,
 })
 
 before(async () => {
   await sqliteUzer.init()
+  db:
   await postgresUzer.init()
 })
 
 after(async () => {
-  await postgresUzer.getPool().query(`DELETE FROM ${tableName};`)
+  await pool.query(`DELETE FROM ${tableName};`)
   await sqliteUzer.close()
   await postgresUzer.close()
 })

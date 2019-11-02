@@ -11,7 +11,6 @@ const checkEmail = email => {
   }
 }
 
-
 export const Uzer = opts => {
   let pool;
   const tableName = opts.tableName || "users"
@@ -22,8 +21,6 @@ export const Uzer = opts => {
       throw new Error(errors.reduce((acc, cur) => acc + cur.toString() + "\n", ""))
     }
   }
-
-  const getPool = () => pool
 
   const verboseLog = (opts.verbose && console.log) || (() => {})
 
@@ -56,7 +53,7 @@ export const Uzer = opts => {
   $$
   `
   const init = async () => {
-    pool = await new Pool(opts.db)
+    pool = await opts.pool
     await pool.query(CREATE_USER_TABLE)
     await pool.query(MIGRATION_1)
     await pool.query(MIGRATION_2)
@@ -191,7 +188,6 @@ export const Uzer = opts => {
     close,
     createUser,
     authenticateUser,
-    getPool,
     getUser,
     getAllUsers,
     updateUserEmail,
