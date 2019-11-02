@@ -14,7 +14,7 @@ const checkEmail = email => {
 
 export const Uzer = opts => {
   let db;
-  const tableName = opts.tableName || "users"
+  const tableName = opts.tableName || "user"
   const validatePassword = opts.validatePassword || passwordValidator
   const checkPassword = password => {
     const errors = validatePassword(password)

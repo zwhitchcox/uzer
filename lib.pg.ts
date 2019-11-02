@@ -13,7 +13,7 @@ const checkEmail = email => {
 
 export const Uzer = opts => {
   let pool;
-  const tableName = opts.tableName || "users"
+  const tableName = opts.tableName || "user"
   const validatePassword = opts.validatePassword || passwordValidator
   const checkPassword = password => {
     const errors = validatePassword(password)
@@ -29,34 +29,19 @@ export const Uzer = opts => {
   CREATE TABLE IF NOT EXISTS ${tableName} (
     id SERIAL PRIMARY KEY,
     email VARCHAR(320) NOT NULL UNIQUE,
-    password VARCHAR(60) NOT NULL
+    password VARCHAR(60) NOT NULL,
+    password_reset_token VARCHAR(36),
+    password_reset_token_expiration BIGINT,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    email_verification_token VARCHAR(36),
+    email_verification_token_expiration BIGINT
   );
   `
-  const MIGRATION_1 = `
-  DO $$
-    BEGIN
-      ALTER TABLE ${tableName} ADD COLUMN password_reset_token VARCHAR(36);
-      ALTER TABLE ${tableName} ADD COLUMN password_reset_token_expiration BIGINT;
-      EXCEPTION WHEN duplicate_column THEN NULL;
-    END;
-  $$
-  `
-  const MIGRATION_2 = `
-  DO $$
-    BEGIN
-      ALTER TABLE ${tableName} ADD COLUMN active BOOLEAN NOT NULL DEFAULT TRUE;
-      ALTER TABLE ${tableName} ADD COLUMN email_verified BOOLEAN NOT NULL DEFAULT FALSE;
-      ALTER TABLE ${tableName} ADD COLUMN email_verification_token VARCHAR(36);
-      ALTER TABLE ${tableName} ADD COLUMN email_verification_token_expiration BIGINT;
-      EXCEPTION WHEN duplicate_column THEN NULL;
-    END;
-  $$
-  `
+
   const init = async () => {
     pool = await opts.pool
     await pool.query(CREATE_USER_TABLE)
-    await pool.query(MIGRATION_1)
-    await pool.query(MIGRATION_2)
     verboseLog('Initialized the user table.')
   }
 

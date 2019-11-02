@@ -6,9 +6,9 @@
     "ts-node-dev": "^1.0.0-pre.43",
     "typescript": "^3.6.4"
   },
-  "name": "uzer",
+  "name": "@zecos/uzer",
   "description": "",
-  "version": "0.0.3",
+  "version": "0.0.1",
   "main": "dist/lib.js",
   "dependencies": {
     "bcrypt": "^3.0.6",
@@ -21,13 +21,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zwhitchcox/uzer.git"
+    "url": "git+https://github.com/zecos/uzer.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/zwhitchcox/uzer/issues"
+    "url": "https://github.com/zecos/uzer/issues"
   },
-  "homepage": "https://github.com/zwhitchcox/uzer#readme"
+  "homepage": "https://github.com/zecos/uzer#readme"
 }
